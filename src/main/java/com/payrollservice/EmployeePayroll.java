@@ -1,4 +1,5 @@
 package com.payrollservice;
+
 class EmployeePayroll {
     private int id;
     private String name;
@@ -19,7 +20,7 @@ class EmployeePayroll {
 }
 
 class EmployeePayrollException extends Exception {
-    public EmployeePayrollException(String message, Throwable cause) {
-        super(message, cause);
+    public EmployeePayrollException(String message) {
+        super(message,cause);
     }
 }
