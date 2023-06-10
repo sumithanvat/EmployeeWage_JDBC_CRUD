@@ -18,9 +18,3 @@ class EmployeePayroll {
         return "EmployeePayroll [id=" + id + ", name=" + name + ", salary=" + salary + "]";
     }
 }
-
-class EmployeePayrollException extends Exception {
-    public EmployeePayrollException(String message) {
-        super(message,cause);
-    }
-}

@@ -14,8 +14,8 @@ public class EmployeePayrollService {
     private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/payroll_service";
 
     // Database credentials
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "Sumit@123";
+    private static final String USERNAME = "your_username";
+    private static final String PASSWORD = "your_password";
 
     public static void main(String[] args) {
         try {
@@ -59,7 +59,7 @@ public class EmployeePayrollService {
             // Execute the SQL update statement
             int rowsAffected = preparedStatement.executeUpdate();
             if (rowsAffected == 0) {
-                throw new EmployeePayrollException("Employee not found in the database.");
+                throw new EmployeePayrollException("Employee not found  in the database");
             }
 
         } catch (ClassNotFoundException | SQLException e) {
