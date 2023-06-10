@@ -1,7 +1,5 @@
 package com.payrollservice;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class EmployeePayrollService {
     // JDBC driver and database URL
@@ -9,32 +7,40 @@ public class EmployeePayrollService {
     private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/payroll_service";
 
     // Database credentials
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "Sumit@123";
+    private static final String USERNAME = "your_username";
+    private static final String PASSWORD = "your_password";
 
     public static void main(String[] args) {
         try {
-            // Define the date range for joining
-            String startDate = "2023-01-01";
-            String endDate = "2023-12-31";
+            // Retrieve employee statistics
+            EmployeeStatistics employeeStatistics = getEmployeeStatistics();
 
-            // Retrieve employee payroll data within the date range
-            List<EmployeePayroll> employeePayrollList = getEmployeePayrollData(startDate, endDate);
+            // Print the employee statistics
+            System.out.println("Male Employees:");
+            System.out.println("Sum of Salaries: " + employeeStatistics.getMaleSum());
+            System.out.println("Average Salary: " + employeeStatistics.getMaleAverage());
+            System.out.println("Minimum Salary: " + employeeStatistics.getMaleMin());
+            System.out.println("Maximum Salary: " + employeeStatistics.getMaleMax());
+            System.out.println("Count: " + employeeStatistics.getMaleCount());
 
-            // Print the retrieved employee payroll data
-            for (EmployeePayroll employeePayroll : employeePayrollList) {
-                System.out.println(employeePayroll);
-            }
+            System.out.println();
+
+            System.out.println("Female Employees:");
+            System.out.println("Sum of Salaries: " + employeeStatistics.getFemaleSum());
+            System.out.println("Average Salary: " + employeeStatistics.getFemaleAverage());
+            System.out.println("Minimum Salary: " + employeeStatistics.getFemaleMin());
+            System.out.println("Maximum Salary: " + employeeStatistics.getFemaleMax());
+            System.out.println("Count: " + employeeStatistics.getFemaleCount());
 
         } catch (EmployeePayrollException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
 
-    public static List<EmployeePayroll> getEmployeePayrollData(String startDate, String endDate) throws EmployeePayrollException {
-        List<EmployeePayroll> employeePayrollList = new ArrayList<>();
+    public static EmployeeStatistics getEmployeeStatistics() throws EmployeePayrollException {
+        EmployeeStatistics employeeStatistics = new EmployeeStatistics();
         Connection connection = null;
-        PreparedStatement preparedStatement = null;
+        Statement statement = null;
         ResultSet resultSet = null;
 
         try {
@@ -44,28 +50,33 @@ public class EmployeePayrollService {
             // Establish the connection to the database
             connection = DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD);
 
-            // Prepare the SQL statement to retrieve employee payroll data within the date range
-            String sql = "SELECT * FROM employee_payroll WHERE joining_date BETWEEN ? AND ?";
-            preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, startDate);
-            preparedStatement.setString(2, endDate);
+            // Create a statement
+            statement = connection.createStatement();
 
-            // Execute the SQL query and retrieve the result set
-            resultSet = preparedStatement.executeQuery();
+            // Execute queries for male employees
+            String maleQuery = "SELECT SUM(salary), AVG(salary), MIN(salary), MAX(salary), COUNT(*) FROM employee_payroll WHERE gender = 'M' GROUP BY gender";
+            resultSet = statement.executeQuery(maleQuery);
+            if (resultSet.next()) {
+                employeeStatistics.setMaleSum(resultSet.getDouble(1));
+                employeeStatistics.setMaleAverage(resultSet.getDouble(2));
+                employeeStatistics.setMaleMin(resultSet.getDouble(3));
+                employeeStatistics.setMaleMax(resultSet.getDouble(4));
+                employeeStatistics.setMaleCount(resultSet.getInt(5));
+            }
 
-            // Iterate through the result set and populate the employee payroll objects
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                double salary = resultSet.getDouble("salary");
-                String joiningDate = resultSet.getString("joining_date");
-
-                EmployeePayroll employeePayroll = new EmployeePayroll(id, name, salary, joiningDate);
-                employeePayrollList.add(employeePayroll);
+            // Execute queries for female employees
+            String femaleQuery = "SELECT SUM(salary), AVG(salary), MIN(salary), MAX(salary), COUNT(*) FROM employee_payroll WHERE gender = 'F' GROUP BY gender";
+            resultSet = statement.executeQuery(femaleQuery);
+            if (resultSet.next()) {
+                employeeStatistics.setFemaleSum(resultSet.getDouble(1));
+                employeeStatistics.setFemaleAverage(resultSet.getDouble(2));
+                employeeStatistics.setFemaleMin(resultSet.getDouble(3));
+                employeeStatistics.setFemaleMax(resultSet.getDouble(4));
+                employeeStatistics.setFemaleCount(resultSet.getInt(5));
             }
 
         } catch (ClassNotFoundException | SQLException e) {
-            throw new EmployeePayrollException("Error retrieving employee payroll data.", e);
+            throw new EmployeePayrollException("Error retrieving employee statistics.", e);
         } finally {
             // Close the database resources
             if (resultSet != null) {
@@ -75,9 +86,9 @@ public class EmployeePayrollService {
                     e.printStackTrace();
                 }
             }
-            if (preparedStatement != null) {
+            if (statement != null) {
                 try {
-                    preparedStatement.close();
+                    statement.close();
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
@@ -91,6 +102,6 @@ public class EmployeePayrollService {
             }
         }
 
-        return employeePayrollList;
+        return employeeStatistics;
     }
 }
