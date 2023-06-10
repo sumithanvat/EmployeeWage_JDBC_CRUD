@@ -1,10 +1,5 @@
 package com.payrollservice;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,76 +9,29 @@ public class EmployeePayrollService {
     private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/payroll_service";
 
     // Database credentials
-    private static final String USERNAME = "your_username";
-    private static final String PASSWORD = "your_password";
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = "Sumit@123";
 
     public static void main(String[] args) {
         try {
-            // Update the salary of Terisa in the database
-            updateEmployeeSalary("Terisa", 3000000.00);
+            // Define the date range for joining
+            String startDate = "2023-01-01";
+            String endDate = "2023-12-31";
 
-            // Retrieve employee payroll data
-            List<EmployeePayroll> employeePayrollList = getEmployeePayrollData();
+            // Retrieve employee payroll data within the date range
+            List<EmployeePayroll> employeePayrollList = getEmployeePayrollData(startDate, endDate);
 
             // Print the retrieved employee payroll data
             for (EmployeePayroll employeePayroll : employeePayrollList) {
                 System.out.println(employeePayroll);
             }
 
-            // Compare Employee Payroll Object with DB to pass the JUnit test
-            boolean passed = compareWithDatabase(employeePayrollList, "Terisa", 3000000.00);
-            System.out.println("JUnit Test Passed: " + passed);
-
         } catch (EmployeePayrollException e) {
             System.out.println("Error: " + e.getMessage());
         }
     }
 
-    public static void updateEmployeeSalary(String employeeName, double newSalary) throws EmployeePayrollException {
-        Connection connection = null;
-        PreparedStatement preparedStatement = null;
-
-        try {
-            // Register the JDBC driver
-            Class.forName(JDBC_DRIVER);
-
-            // Establish the connection to the database
-            connection = DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD);
-
-            // Prepare the SQL statement to update the employee's salary
-            String sql = "UPDATE employee_payroll SET salary = ? WHERE name = ?";
-            preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setDouble(1, newSalary);
-            preparedStatement.setString(2, employeeName);
-
-            // Execute the SQL update statement
-            int rowsAffected = preparedStatement.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new EmployeePayrollException("Employee not found  in the database");
-            }
-
-        } catch (ClassNotFoundException | SQLException e) {
-            throw new EmployeePayrollException("Error updating employee salary.");
-        } finally {
-            // Close the database resources
-            if (preparedStatement != null) {
-                try {
-                    preparedStatement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public static List<EmployeePayroll> getEmployeePayrollData() throws EmployeePayrollException {
+    public static List<EmployeePayroll> getEmployeePayrollData(String startDate, String endDate) throws EmployeePayrollException {
         List<EmployeePayroll> employeePayrollList = new ArrayList<>();
         Connection connection = null;
         PreparedStatement preparedStatement = null;
@@ -96,9 +44,11 @@ public class EmployeePayrollService {
             // Establish the connection to the database
             connection = DriverManager.getConnection(DATABASE_URL, USERNAME, PASSWORD);
 
-            // Prepare the SQL statement to retrieve employee payroll data
-            String sql = "SELECT * FROM employee_payroll";
+            // Prepare the SQL statement to retrieve employee payroll data within the date range
+            String sql = "SELECT * FROM employee_payroll WHERE joining_date BETWEEN ? AND ?";
             preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, startDate);
+            preparedStatement.setString(2, endDate);
 
             // Execute the SQL query and retrieve the result set
             resultSet = preparedStatement.executeQuery();
@@ -108,13 +58,14 @@ public class EmployeePayrollService {
                 int id = resultSet.getInt("id");
                 String name = resultSet.getString("name");
                 double salary = resultSet.getDouble("salary");
+                String joiningDate = resultSet.getString("joining_date");
 
-                EmployeePayroll employeePayroll = new EmployeePayroll(id, name, salary);
+                EmployeePayroll employeePayroll = new EmployeePayroll(id, name, salary, joiningDate);
                 employeePayrollList.add(employeePayroll);
             }
 
         } catch (ClassNotFoundException | SQLException e) {
-            throw new EmployeePayrollException("Error retrieving employee payroll data.");
+            throw new EmployeePayrollException("Error retrieving employee payroll data.", e);
         } finally {
             // Close the database resources
             if (resultSet != null) {
@@ -141,14 +92,5 @@ public class EmployeePayrollService {
         }
 
         return employeePayrollList;
-    }
-
-    public static boolean compareWithDatabase(List<EmployeePayroll> employeePayrollList, String employeeName, double salary) {
-        for (EmployeePayroll employeePayroll : employeePayrollList) {
-            if (employeePayroll.getName().equals(employeeName) && employeePayroll.getSalary() == salary) {
-                return true;
-            }
-        }
-        return false;
     }
 }
